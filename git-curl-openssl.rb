@@ -4,14 +4,20 @@
 class GitCurlOpenssl < Formula
   desc "Distributed revision control system"
   homepage "https://git-scm.com"
-  url "https://www.kernel.org/pub/software/scm/git/git-2.24.1.tar.xz"
-  sha256 "723f24dce8fdd621a308b6187553fce7d5244205c065fe0a3aebd0b7c3f88562"
+  url "https://mirrors.edge.kernel.org/pub/software/scm/git/git-2.33.0.tar.xz"
+  sha256 "bf3c6ab5f82e072aad4768f647cfb1ef60aece39855f83f080f9c0222dd20c4f"
   head "https://github.com/git/git.git", shallow: false
 
+  livecheck do
+    url "https://www.kernel.org/pub/software/scm/git/"
+    regex(/href=.*?git[._-]v?(\d+(?:\.\d+)+)\.t/i)
+  end
+
   bottle do
-    sha256 catalina:    "2779f9cea861ef4d906093ac7b7255b3eeb7b6f76cbbc8407035bd3d3b80305d"
-    sha256 mojave:      "423599ea4d93020e4ee33965bf53c0e629c1d5a16e59efc657b4c914d9f52bd0"
-    sha256 high_sierra: "ce56a6b4012a93bfee18cc5017788033c423bef5f732f3117dfa59b688b08b5c"
+    sha256 arm64_big_sur: "06e9cc3e274380b2494451ed2e3c6acf1e091facdf2ce02da57921fbc6a3115a"
+    sha256 big_sur:       "1b89ec39f7a4b865b3c671f9b2495ec85992595112b74a5dc3ac78beae33ff0d"
+    sha256 catalina:      "4aaced15f34f02a7a965f9cee42b78ef471034e4d9cf3bbbe8bf2ab8f4f72678"
+    sha256 mojave:        "5e85e4d8c9aaa398420993cb9c2561db79d3a71a12b79b8631ee0de5b0d86c67"
   end
 
   depends_on "curl-openssl"
@@ -20,13 +26,13 @@ class GitCurlOpenssl < Formula
   depends_on "pcre2"
 
   resource "html" do
-    url "https://www.kernel.org/pub/software/scm/git/git-htmldocs-2.24.1.tar.xz"
-    sha256 "8b4da79e7931c5156f3f994c6d8162c7ccb525ebd3f71e26ae8f8430db038403"
+    url "https://mirrors.edge.kernel.org/pub/software/scm/git/git-htmldocs-2.33.0.tar.xz"
+    sha256 "309c5d3cdd9a115f693c0e035298cc867a3b8ba8ce235fa1ac950a48cb4b0447"
   end
 
   resource "man" do
-    url "https://www.kernel.org/pub/software/scm/git/git-manpages-2.24.1.tar.xz"
-    sha256 "27304ab2674d5ad623a0a72c22116cb47df4a611499a53aef5c7ec39a32cfefb"
+    url "https://mirrors.edge.kernel.org/pub/software/scm/git/git-manpages-2.33.0.tar.xz"
+    sha256 "d6d38abe3fe45b74359e65d53e51db3aa92d7f551240b7f7a779746f24c4bc31"
   end
 
   resource "Net::SMTP::SSL" do
@@ -73,20 +79,20 @@ class GitCurlOpenssl < Formula
       LDFLAGS=#{ENV.ldflags}
     ]
 
-    openssl_prefix = Formula["openssl@1.1"].opt_prefix
-    args += %W[NO_APPLE_COMMON_CRYPTO=1 OPENSSLDIR=#{openssl_prefix}]
+      openssl_prefix = Formula["openssl@1.1"].opt_prefix
+      args += %W[NO_APPLE_COMMON_CRYPTO=1 OPENSSLDIR=#{openssl_prefix}]
 
     system "make", "install", *args
 
     git_core = libexec/"git-core"
 
     # Install the macOS keychain credential helper
-    cd "contrib/credential/osxkeychain" do
-      system "make", "CC=#{ENV.cc}",
-             "CFLAGS=#{ENV.cflags}",
-             "LDFLAGS=#{ENV.ldflags}"
-      git_core.install "git-credential-osxkeychain"
-      system "make", "clean"
+      cd "contrib/credential/osxkeychain" do
+        system "make", "CC=#{ENV.cc}",
+                       "CFLAGS=#{ENV.cflags}",
+                       "LDFLAGS=#{ENV.ldflags}"
+        git_core.install "git-credential-osxkeychain"
+        system "make", "clean"
     end
 
     # Generate diff-highlight perl script executable
@@ -103,8 +109,8 @@ class GitCurlOpenssl < Formula
     # Install git-subtree
     cd "contrib/subtree" do
       system "make", "CC=#{ENV.cc}",
-             "CFLAGS=#{ENV.cflags}",
-             "LDFLAGS=#{ENV.ldflags}"
+                     "CFLAGS=#{ENV.cflags}",
+                     "LDFLAGS=#{ENV.ldflags}"
       git_core.install "git-subtree"
     end
 
@@ -129,7 +135,7 @@ class GitCurlOpenssl < Formula
     # To avoid this feature hooking into the system OpenSSL, remove it
     rm "#{libexec}/git-core/git-imap-send" if MacOS.version >= :yosemite
 
-    # git-send-email needs Net::SMTP::SSL
+    # git-send-email needs Net::SMTP::SSL or Net::SMTP >= 2.34
     resource("Net::SMTP::SSL").stage do
       (share/"perl5").install "lib/Net"
     end
@@ -142,9 +148,9 @@ class GitCurlOpenssl < Formula
 
     # Set the macOS keychain credential helper by default
     # (as Apple's CLT's git also does this).
-    (buildpath/"gitconfig").write <<~EOS
-      [credential]
-      \thelper = osxkeychain
+      (buildpath/"gitconfig").write <<~EOS
+        [credential]
+        \thelper = osxkeychain
     EOS
     etc.install "gitconfig"
   end
