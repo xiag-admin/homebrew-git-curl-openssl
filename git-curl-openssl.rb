@@ -1,20 +1,23 @@
+# typed: false
+# frozen_string_literal: true
+
 class GitCurlOpenssl < Formula
   desc "Distributed revision control system"
   homepage "https://git-scm.com"
   url "https://www.kernel.org/pub/software/scm/git/git-2.24.1.tar.xz"
   sha256 "723f24dce8fdd621a308b6187553fce7d5244205c065fe0a3aebd0b7c3f88562"
-  head "https://github.com/git/git.git", :shallow => false
+  head "https://github.com/git/git.git", shallow: false
 
   bottle do
-    sha256 "2779f9cea861ef4d906093ac7b7255b3eeb7b6f76cbbc8407035bd3d3b80305d" => :catalina
-    sha256 "423599ea4d93020e4ee33965bf53c0e629c1d5a16e59efc657b4c914d9f52bd0" => :mojave
-    sha256 "ce56a6b4012a93bfee18cc5017788033c423bef5f732f3117dfa59b688b08b5c" => :high_sierra
+    sha256 catalina:    "2779f9cea861ef4d906093ac7b7255b3eeb7b6f76cbbc8407035bd3d3b80305d"
+    sha256 mojave:      "423599ea4d93020e4ee33965bf53c0e629c1d5a16e59efc657b4c914d9f52bd0"
+    sha256 high_sierra: "ce56a6b4012a93bfee18cc5017788033c423bef5f732f3117dfa59b688b08b5c"
   end
 
-  depends_on "gettext"
-  depends_on "pcre2"
-  depends_on "openssl@1.1"
   depends_on "curl-openssl"
+  depends_on "gettext"
+  depends_on "openssl@1.1"
+  depends_on "pcre2"
 
   resource "html" do
     url "https://www.kernel.org/pub/software/scm/git/git-htmldocs-2.24.1.tar.xz"
@@ -43,7 +46,7 @@ class GitCurlOpenssl < Formula
     ENV["LIBPCREDIR"] = Formula["pcre2"].opt_prefix
     ENV["V"] = "1" # build verbosely
 
-    perl_version = Utils.popen_read("perl --version")[/v(\d+\.\d+)(?:\.\d+)?/, 1]
+    perl_version = Utils.safe_popen_read("perl", "--version")[/v(\d+\.\d+)(?:\.\d+)?/, 1]
 
     ENV["PERLLIB_EXTRA"] = %W[
       #{MacOS.active_developer_dir}
@@ -53,9 +56,7 @@ class GitCurlOpenssl < Formula
       "#{p}/Library/Perl/#{perl_version}/darwin-thread-multi-2level"
     end.join(":")
 
-    unless quiet_system ENV["PERL_PATH"], "-e", "use ExtUtils::MakeMaker"
-      ENV["NO_PERL_MAKEMAKER"] = "1"
-    end
+    ENV["NO_PERL_MAKEMAKER"] = "1" unless quiet_system ENV["PERL_PATH"], "-e", "use ExtUtils::MakeMaker"
 
     # Ensure we are using the correct system headers (for curl) to workaround
     # mismatched Xcode/CLT versions:
@@ -82,8 +83,8 @@ class GitCurlOpenssl < Formula
     # Install the macOS keychain credential helper
     cd "contrib/credential/osxkeychain" do
       system "make", "CC=#{ENV.cc}",
-                     "CFLAGS=#{ENV.cflags}",
-                     "LDFLAGS=#{ENV.ldflags}"
+             "CFLAGS=#{ENV.cflags}",
+             "LDFLAGS=#{ENV.ldflags}"
       git_core.install "git-credential-osxkeychain"
       system "make", "clean"
     end
@@ -102,8 +103,8 @@ class GitCurlOpenssl < Formula
     # Install git-subtree
     cd "contrib/subtree" do
       system "make", "CC=#{ENV.cc}",
-                     "CFLAGS=#{ENV.cflags}",
-                     "LDFLAGS=#{ENV.ldflags}"
+             "CFLAGS=#{ENV.cflags}",
+             "LDFLAGS=#{ENV.ldflags}"
       git_core.install "git-subtree"
     end
 
@@ -126,9 +127,7 @@ class GitCurlOpenssl < Formula
     chmod 0755, Dir["#{share}/doc/git-doc/{RelNotes,howto,technical}"]
 
     # To avoid this feature hooking into the system OpenSSL, remove it
-    if MacOS.version >= :yosemite
-      rm "#{libexec}/git-core/git-imap-send"
-    end
+    rm "#{libexec}/git-core/git-imap-send" if MacOS.version >= :yosemite
 
     # git-send-email needs Net::SMTP::SSL
     resource("Net::SMTP::SSL").stage do
@@ -167,4 +166,3 @@ class GitCurlOpenssl < Formula
     )
   end
 end
-
